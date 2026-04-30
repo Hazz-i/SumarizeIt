@@ -104,7 +104,12 @@ export default function AppSection() {
         }, sectionRef)
 
         return () => ctx.revert()
-    }, [result, isLoading])
+    }, [])
+
+    // Refresh ScrollTrigger when content changes to keep markers/positions accurate
+    useEffect(() => {
+        ScrollTrigger.refresh()
+    }, [result, isLoading, activeTab])
 
     const toggleGenerate = (type: GenerateType) => {
         setGenerateTypes(prev =>
