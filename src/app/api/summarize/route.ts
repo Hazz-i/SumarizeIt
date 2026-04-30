@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
         const openRouterBody = {
             model: 'google/gemini-2.0-flash-001',
-            max_tokens: 4096,
+            max_tokens: 3000,
             messages: [
                 {
                     role: 'user',
