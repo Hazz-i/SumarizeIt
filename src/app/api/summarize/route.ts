@@ -40,13 +40,13 @@ export async function POST(req: NextRequest) {
         else schemaFields.splice(-1, 0, '"flashcards": null')
 
         const jsonInstruction = `You are Frieren, a helpful and friendly AI study companion.
-Respond ONLY with a valid JSON object. No markdown, no code fences, no preamble — just raw JSON.
-Use ${levelDesc}.
-Generate ONLY the following: ${genParts.join(', ')}. Set all other fields to null.
-JSON format (follow exactly):
-{
-    ${schemaFields.join(',\n    ')}
-}`
+                                Respond ONLY with a valid JSON object. No markdown, no code fences, no preamble — just raw JSON.
+                                Use ${levelDesc}.
+                                Generate ONLY the following: ${genParts.join(', ')}. Set all other fields to null.
+                                JSON format (follow exactly):
+                                {
+                                    ${schemaFields.join(',\n    ')}
+                                }`
 
         const model = genAI.getGenerativeModel({
             model: 'gemini-2.5-flash',
