@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
                 'HTTP-Referer': 'https://summarize-it.app',
-                'X-Title': 'SumerizeIt',
+                'X-Title': 'sumarizeit',
             },
             body: JSON.stringify(openRouterBody),
         })

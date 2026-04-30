@@ -132,12 +132,12 @@ const HeroSection = () => {
       <div className="relative z-10 px-6 md:px-12 lg:px-20">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2.5" aria-label="SumerizeIt Home">
+          <a href="/" className="flex items-center gap-2.5" aria-label="sumarizeit Home">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/90 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-emerald-500/30">
               <BookOpen className="w-4 h-4 text-white" />
             </div>
             <span className={`font-alegreya-sans text-lg tracking-tight transition-colors duration-300 text-white`}>
-              Sumerize<span className="text-emerald-400">It</span>
+              sumarize<span className="text-emerald-400">it</span>
             </span>
           </a>
         </div>
@@ -177,7 +177,7 @@ const HeroSection = () => {
           <div ref={mascotRef} className="relative w-[65%] sm:w-[50%] md:w-[42%] lg:w-[35%] max-w-md aspect-square">
             <Image
               src="/images/mascot-hero.png"
-              alt="SumerizeIt AI Companion"
+              alt="sumarizeit AI Companion"
               fill
               priority
               className="object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"

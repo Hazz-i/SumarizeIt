@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SumerizeIt",
-  description: "Sumerize any text, topic, or PDF",
+  title: "sumarizeit",
+  description: "sumarize any text, topic, or PDF",
   icons: {
     icon: "/icons/icon.jpg",
   },

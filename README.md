@@ -1,4 +1,4 @@
-# ✨ SumerizeIt
+# ✨ sumarizeit
 
 An AI-powered study companion that transforms any text, topic, or PDF into structured **summaries**, **key points**, and **flashcards** powered by Frieren, your magical study guide.
 
@@ -21,8 +21,8 @@ An AI-powered study companion that transforms any text, topic, or PDF into struc
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Hazz-i/SummarizeIt.git
-cd SummarizeIt
+git clone https://github.com/Hazz-i/sumarizeit.git
+cd sumarizeit
 ```
 
 ### 2. Install dependencies
