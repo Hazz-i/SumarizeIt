@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
 export async function POST(req: NextRequest) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutes timeout
+
     try {
         const body = await req.json()
         const { activeTab, text, topic, pdfBase64, generateTypes, explainLevel, cardCount } = body
@@ -89,7 +92,10 @@ export async function POST(req: NextRequest) {
                 'X-Title': 'sumarizeit',
             },
             body: JSON.stringify(openRouterBody),
+            signal: controller.signal,
         })
+
+        clearTimeout(timeoutId)
 
         const data = await res.json()
 
@@ -106,7 +112,13 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(parsed)
     } catch (err: unknown) {
+        clearTimeout(timeoutId)
         console.error('Summarize API error:', err)
+        
+        if (err instanceof Error && err.name === 'AbortError') {
+            return NextResponse.json({ error: 'The request timed out. Please try a smaller file or shorter text.' }, { status: 504 })
+        }
+
         const message = err instanceof Error ? err.message : 'Something went wrong'
         return NextResponse.json({ error: message }, { status: 500 })
     }
