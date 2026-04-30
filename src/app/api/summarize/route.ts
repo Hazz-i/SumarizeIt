@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 export const maxDuration = 60;
 
@@ -11,16 +10,18 @@ export async function POST(req: NextRequest) {
         const body = await req.json()
         const { activeTab, text, topic, pdfBase64, generateTypes, explainLevel, cardCount } = body
 
-        const apiKey = process.env.OPENROUTER_API_KEY
+        const apiKey = process.env.GEMINI_API_KEY
         if (!apiKey) {
             return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
         }
 
+        const genAI = new GoogleGenerativeAI(apiKey)
+
         // Build the generation instruction parts
-        const parts: string[] = []
-        if (generateTypes.includes('Summary')) parts.push('a concise summary (2-3 paragraphs)')
-        if (generateTypes.includes('Key Points')) parts.push('5-7 bullet-point key takeaways')
-        if (generateTypes.includes('Flashcards')) parts.push(`${cardCount} flashcard Q&A pairs`)
+        const genParts: string[] = []
+        if (generateTypes.includes('Summary')) genParts.push('a concise summary (2-3 paragraphs)')
+        if (generateTypes.includes('Key Points')) genParts.push('5-7 bullet-point key takeaways')
+        if (generateTypes.includes('Flashcards')) genParts.push(`${cardCount} flashcard Q&A pairs`)
 
         const levelDesc =
             explainLevel === 'Beginner'
@@ -38,31 +39,35 @@ export async function POST(req: NextRequest) {
         if (generateTypes.includes('Flashcards')) schemaFields.splice(-1, 0, `"flashcards": [{"q": "question", "a": "answer"}]`)
         else schemaFields.splice(-1, 0, '"flashcards": null')
 
-        const jsonInstruction = `
-        You are Frieren, a helpful and friendly AI study companion.
-        Respond ONLY with a valid JSON object. No markdown, no code fences, no preamble — just raw JSON.
-        Use ${levelDesc}.
-        Generate ONLY the following: ${parts.join(', ')}. Set all other fields to null.
-        JSON format (follow exactly):
-        {
-            ${schemaFields.join(',\n            ')}
-        }`
-        // Build messages for OpenRouter (OpenAI-compatible format)
-        let userContent: string | Array<{ type: string; text?: string; image_url?: { url: string } }>
+        const jsonInstruction = `You are Frieren, a helpful and friendly AI study companion.
+Respond ONLY with a valid JSON object. No markdown, no code fences, no preamble — just raw JSON.
+Use ${levelDesc}.
+Generate ONLY the following: ${genParts.join(', ')}. Set all other fields to null.
+JSON format (follow exactly):
+{
+    ${schemaFields.join(',\n    ')}
+}`
+
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            systemInstruction: jsonInstruction,
+            generationConfig: {
+                responseMimeType: 'application/json',
+            }
+        })
+
+        // Build messages for Gemini
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const contentParts: any[] = []
 
         if (activeTab === 'pdf' && pdfBase64) {
-            userContent = [
-                {
-                    type: 'image_url',
-                    image_url: {
-                        url: `data:application/pdf;base64,${pdfBase64}`,
-                    },
-                },
-                {
-                    type: 'text',
-                    text: `Please analyze the content of this PDF document.\n${jsonInstruction}`,
-                },
-            ]
+            contentParts.push({
+                inlineData: {
+                    data: pdfBase64,
+                    mimeType: 'application/pdf'
+                }
+            })
+            contentParts.push({ text: 'Please analyze the content of this PDF document.' })
         } else {
             const inputText = activeTab === 'topic' ? topic : text
             const isTopicMode = activeTab === 'topic'
@@ -70,44 +75,20 @@ export async function POST(req: NextRequest) {
                 ? `Generate study material on the topic: "${inputText}"`
                 : `Analyze and process the following study material:\n\n${inputText}`
 
-            userContent = `${inputInstruction}\n\n${jsonInstruction}`
+            contentParts.push({ text: inputInstruction })
         }
 
-        const openRouterBody = {
-            model: 'google/gemini-2.0-flash-001',
-            max_tokens: 3000,
-            messages: [
-                {
-                    role: 'user',
-                    content: userContent,
-                },
-            ],
-        }
-
-        const res = await fetch(OPENROUTER_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': 'https://summarize-it.app',
-                'X-Title': 'sumarizeit',
-            },
-            body: JSON.stringify(openRouterBody),
-            signal: controller.signal,
-        })
+        // Call Gemini
+        const result = await model.generateContent(
+            { contents: [{ role: 'user', parts: contentParts }] },
+            { signal: controller.signal }
+        )
 
         clearTimeout(timeoutId)
 
-        const data = await res.json()
+        const rawText = result.response.text()
 
-        if (data.error) {
-            throw new Error(data.error.message || 'OpenRouter API error')
-        }
-
-        // Extract the text from OpenRouter response (OpenAI-compatible format)
-        const rawText = data.choices?.[0]?.message?.content || ''
-
-        // Clean up any markdown code fences
+        // Clean up any markdown code fences (even though we asked for raw JSON, Gemini sometimes adds them)
         const clean = rawText.replace(/```json|```/g, '').trim()
         const parsed = JSON.parse(clean)
 
